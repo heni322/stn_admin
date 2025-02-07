@@ -9,27 +9,6 @@ on:
       - main  # Trigger the pipeline on pull requests to the main branch
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18  # Use Node.js 18
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run tests
-        run: npm test  # Replace with your test command if applicable
-
-      - name: Build the application
-        run: npm run build
-
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-test  # Ensure the build-and-test job succeeds before deploying
