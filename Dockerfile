@@ -1,23 +1,21 @@
-# Use an official Node.js image
 FROM node:18-alpine
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package files
 COPY package*.json ./
 
-# Remove any existing node_modules from the copied files
-RUN rm -rf node_modules
-
-# Install dependencies again to ensure clean installation
-RUN npm install
+# Install dependencies
+RUN npm ci
 
 # Copy the rest of the application files
 COPY . .
 
-# Expose port 3000 (internal container port)
+# Build the application
+RUN npm run build
+
+# Expose port 3000
 EXPOSE 3000
 
-# Start the Next.js application in development mode
-CMD ["npm", "run", "dev"]
+# Start the Next.js application in production mode
+CMD ["npm", "start"]
