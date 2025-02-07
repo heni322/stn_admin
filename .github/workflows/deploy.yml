@@ -32,6 +32,8 @@ jobs:
         run: |
           echo "SSH Key:"
           echo "${{ secrets.SERVER_SSH_KEY }}"
+          echo "${{ secrets.SERVER_USER }}"
+          echo "${{ secrets.SERVER_IP }}"
 
       - name: Deploy to Ubuntu server
         uses: appleboy/ssh-action@master
