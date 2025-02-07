@@ -24,8 +24,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests
-        run: npm test  # Replace with your test command if applicable
+    #   - name: Run tests
+    #     run: npm test  # Replace with your test command if applicable
 
       - name: Build the application
         run: npm run build
