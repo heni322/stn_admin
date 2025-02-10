@@ -47,6 +47,12 @@ jobs:
 
             # Pull the latest changes
             sudo git pull
+            # Copy .env.admin.local file to the server if it exists
+            if [ -f .env.admin.local ]; then
+              cp .env.admin.local ${{ secrets.DEPLOY_PATH }}/.env.local
+            fi
+
+            sudo chmod 644 /var/www/stn_admin/.env.local
 
             # Build and start Docker containers
             docker-compose down

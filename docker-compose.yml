@@ -2,6 +2,8 @@ version: "3.8"
 services:
   next-app:
     build: .
+    volumes:
+      - ./.env.local:/app/.env.local
     ports:
       - "4000:3000"
     environment:
