@@ -46,8 +46,7 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
 
             # Pull the latest changes
-            git fetch --all
-            git reset --hard origin/main
+            sudo git pull
 
             # Build and start Docker containers
             docker-compose down
