@@ -1,14 +1,35 @@
-/* eslint-disable @next/next/no-img-element */
-
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import AppMenuitem from './AppMenuitem';
 import { LayoutContext } from './context/layoutcontext';
 import { MenuProvider } from './context/menucontext';
 import Link from 'next/link';
 import { AppMenuItem } from '@/types';
+import { useRouter } from 'next/navigation'; // Updated import
 
 const AppMenu = () => {
     const { layoutConfig } = useContext(LayoutContext);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+    const [isClient, setIsClient] = useState(false); // State to check if running in the client
+
+    // Use the correct useRouter hook for the App Router
+    const router = useRouter();
+
+    // Check if window object is available (i.e., we're in the client-side)
+    useEffect(() => {
+        setIsClient(true); // Set to true once the component is mounted on the client-side
+    }, []);
+
+    // Check for token on component mount
+    useEffect(() => {
+        if (isClient) {
+            const token = localStorage.getItem('token'); // Assuming the token is stored in localStorage
+            if (token) {
+                setIsAuthenticated(true); // User is authenticated
+            } else {
+                setIsAuthenticated(false); // User is not authenticated
+            }
+        }
+    }, [isClient]);
 
     const model: AppMenuItem[] = [
         {
@@ -17,7 +38,13 @@ const AppMenu = () => {
         },
         {
             label: 'Gestion des utilisateurs',
-            items: [{ label: 'Utilistateurs', icon: 'pi pi-fw pi-users', to: '/pages/user' }]
+            items: [
+                {
+                    label: 'Utilistateurs',
+                    icon: 'pi pi-fw pi-users',
+                    to: '/pages/user',
+                }
+            ]
         },
         {
             label: 'Gestion des Catégories',
@@ -82,11 +109,33 @@ const AppMenu = () => {
         },
     ];
 
+    // Redirect protected routes if not authenticated
+    useEffect(() => {
+        if (isAuthenticated === false && isClient) {
+            // Redirect to login page if trying to access protected routes
+            router.push('/auth/login');
+        }
+    }, [isAuthenticated, isClient, router]);
+
     return (
         <MenuProvider>
             <ul className="layout-menu">
                 {model.map((item, i) => {
-                    return !item?.seperator ? <AppMenuitem item={item} root={true} index={i} key={item.label} /> : <li className="menu-separator"></li>;
+                    // If the route is protected and user is not authenticated, don't render the menu item
+                    if (item.items) {
+                        item.items = item.items.filter((subItem) => {
+                            if (!isAuthenticated) {
+                                return false; // Hide protected route if not authenticated
+                            }
+                            return true;
+                        });
+                    }
+
+                    return !item?.seperator ? (
+                        <AppMenuitem item={item} root={true} index={i} key={item.label} />
+                    ) : (
+                        <li className="menu-separator" key={`separator-${i}`}></li>
+                    );
                 })}
 
                 <Link href="https://blocks.primereact.org" target="_blank" style={{ cursor: 'pointer' }}>

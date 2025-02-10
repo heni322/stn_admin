@@ -8,14 +8,38 @@ import { Password } from 'primereact/password';
 import { LayoutContext } from '../../../../layout/context/layoutcontext';
 import { InputText } from 'primereact/inputtext';
 import { classNames } from 'primereact/utils';
-
+import { useLogin } from '@/lib/hooks/useAuth';
+import { useAuthStore } from '@/lib/store';
+import apiClient from '@/lib/apiClient';
 const LoginPage = () => {
+    const [email, setEmail] = useState(''); // Track email state
     const [password, setPassword] = useState('');
     const [checked, setChecked] = useState(false);
     const { layoutConfig } = useContext(LayoutContext);
 
+    const { login } = useAuthStore(); // Zustand login function
     const router = useRouter();
     const containerClassName = classNames('surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden', { 'p-input-filled': layoutConfig.inputStyle === 'filled' });
+
+    const { mutate, error } = useLogin(); // React Query mutation
+
+    const handleLogin = async () => {
+        console.log(email, password);
+
+        mutate(
+            { email, password },
+            {
+                onSuccess: (data) => {
+                    console.log('Login success', data);
+                    login(email, password); // Store user & token in Zustand
+                    router.push('/'); // Redirect on success
+                },
+                onError: (err) => {
+                    console.error('Login failed', err);
+                },
+            }
+        );
+    };
 
     return (
         <div className={containerClassName}>
@@ -30,8 +54,6 @@ const LoginPage = () => {
                 >
                     <div className="w-full surface-card py-8 px-5 sm:px-8" style={{ borderRadius: '53px' }}>
                         <div className="text-center mb-5">
-                            {/* <img src="/demo/images/login/avatar.png" alt="Image" height="50" className="mb-3" /> */}
-                            {/* <div className="text-900 text-3xl font-medium mb-3">Welcome, Isabel!</div> */}
                             <span className="text-600 font-medium">Connectez-vous pour continuer</span>
                         </div>
 
@@ -39,23 +61,51 @@ const LoginPage = () => {
                             <label htmlFor="email1" className="block text-900 text-xl font-medium mb-2">
                                 Email
                             </label>
-                            <InputText id="email1" type="text" placeholder="Email address" className="w-full md:w-30rem mb-5" style={{ padding: '1rem' }} />
+                            <InputText
+                                id="email1"
+                                type="text"
+                                placeholder="Email address"
+                                className="w-full md:w-30rem mb-5"
+                                style={{ padding: '1rem' }}
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)} // Set email value
+                            />
 
                             <label htmlFor="password1" className="block text-900 font-medium text-xl mb-2">
                                 Password
                             </label>
-                            <Password inputId="password1" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" toggleMask className="w-full mb-5" inputClassName="w-full p-3 md:w-30rem"></Password>
+                            <Password
+                                inputId="password1"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Password"
+                                toggleMask
+                                className="w-full mb-5"
+                                inputClassName="w-full p-3 md:w-30rem"
+                            />
 
                             <div className="flex align-items-center justify-content-between mb-5 gap-5">
                                 <div className="flex align-items-center">
-                                    <Checkbox inputId="rememberme1" checked={checked} onChange={(e) => setChecked(e.checked ?? false)} className="mr-2"></Checkbox>
+                                    <Checkbox
+                                        inputId="rememberme1"
+                                        checked={checked}
+                                        onChange={(e) => setChecked(e.checked ?? false)}
+                                        className="mr-2"
+                                    ></Checkbox>
                                     <label htmlFor="rememberme1">Se souvenir de moi</label>
                                 </div>
-                                <a className="font-medium no-underline ml-2 text-right cursor-pointer" style={{ color: 'var(--primary-color)' }}>
+                                <a
+                                    className="font-medium no-underline ml-2 text-right cursor-pointer"
+                                    style={{ color: 'var(--primary-color)' }}
+                                >
                                     Mot de passe oublié ?
                                 </a>
                             </div>
-                            <Button label="Connectez-vous" className="w-full p-3 text-xl" onClick={() => router.push('/')}></Button>
+                            <Button
+                                label="Connectez-vous"
+                                className="w-full p-3 text-xl"
+                                onClick={handleLogin} // Call handleLogin on button click
+                            ></Button>
                         </div>
                     </div>
                 </div>
