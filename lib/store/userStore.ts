@@ -1,3 +1,4 @@
+// store/userStore.ts
 import { create } from 'zustand';
 
 type User = {
@@ -5,8 +6,9 @@ type User = {
     first_name: string;
     last_name: string;
     email: string;
-    image: string;
-    role: string;
+    image: string | null;
+    created_at: string;
+    updated_at: string;
 };
 
 type UserStore = {
