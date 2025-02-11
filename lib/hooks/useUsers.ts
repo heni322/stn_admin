@@ -11,25 +11,40 @@ interface User {
     email: string;
     image: string;
     role: string;
+    // Add other user fields as needed
 }
 
+// Function to get token from localStorage
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 const fetchUsers = async (): Promise<User[]> => {
-    const response = await apiClient.get('/api/back-office/users');
+    const response = await apiClient.get('/api/back-office/users', {
+        headers: getAuthHeaders(),
+    });
     return response.data;
 };
 
 const createUser = async (user: User): Promise<User> => {
-    const response = await apiClient.post('/api/back-office/users', user);
+    const response = await apiClient.post('/api/back-office/users', user, {
+        headers: getAuthHeaders(),
+    });
     return response.data;
 };
 
 const updateUser = async (user: User): Promise<User> => {
-    const response = await apiClient.put(`/api/back-office/users/${user.id}`, user);
+    const response = await apiClient.put(`/api/back-office/users/${user.id}`, user, {
+        headers: getAuthHeaders(),
+    });
     return response.data;
 };
 
 const deleteUser = async (id: string): Promise<string> => {
-    await apiClient.delete(`/api/back-office/users/${id}`);
+    await apiClient.delete(`/api/back-office/users/${id}`, {
+        headers: getAuthHeaders(),
+    });
     return id;
 };
 
@@ -37,17 +52,20 @@ export const useUsers = () => {
     const queryClient = useQueryClient();
     const { setUsers } = useUserStore();
 
+    // Fetch users with react-query
     const { data: users, isLoading } = useQuery({
         queryKey: ['users'],
         queryFn: fetchUsers,
     });
 
+    // Update store when users change
     useEffect(() => {
         if (users) {
             setUsers(users);
         }
     }, [users, setUsers]);
 
+    // Mutations
     const createMutation = useMutation({
         mutationFn: createUser,
         onSuccess: (data: User) => {
