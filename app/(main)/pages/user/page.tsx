@@ -216,12 +216,20 @@ const Crud = () => {
                             field="image"
                             header="Image"
                             headerStyle={{ minWidth: '15rem' }}
-                            body={(rowData: User) => (
-                                <img
-                                    src={rowData.image || '/demo/images/avatar/profile.jpg'}
-                                    alt="Profile"
-                                    className="w-3 h-3 rounded-full object-cover"
-                                />
+                            body={(rowData: User | undefined) => (
+                                rowData ? (
+                                    <img
+                                        src={rowData.image || '/demo/images/avatar/profile.jpg'}
+                                        alt="Profile"
+                                        className="w-3 h-3 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <img
+                                        src="/demo/images/avatar/profile.jpg"
+                                        alt="Profile"
+                                        className="w-3 h-3 rounded-full object-cover"
+                                    />
+                                )
                             )}
                         />
                         <Column body={actionBodyTemplate} headerStyle={{ minWidth: '10rem' }} />
