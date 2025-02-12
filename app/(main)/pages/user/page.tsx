@@ -10,8 +10,9 @@ import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
+import { Password } from 'primereact/password';
 
 const Crud = () => {
     const toast = useRef<Toast>(null);
@@ -23,6 +24,7 @@ const Crud = () => {
     const [deleteUserDialog, setDeleteUserDialog] = React.useState(false);
     const [deleteUsersDialog, setDeleteUsersDialog] = React.useState(false);
     const [user, setUser] = React.useState<User | null>(null);
+    const [password, setPassword] = useState('');
     const [submitted, setSubmitted] = React.useState(false);
 
     const roles = [
@@ -54,6 +56,11 @@ const Crud = () => {
         setSubmitted(true);
 
         if (user?.first_name && user?.last_name && user?.email) {
+            let formData = { ...user };
+
+            if (!user.id) {
+                formData = { ...user, password }; // Only include password when creating a new user
+            }
             if (user.id) {
                 updateUser(user);
             } else {
@@ -192,6 +199,16 @@ const Crud = () => {
                             />
                             {submitted && !user?.role && <small className="p-invalid">Role is required.</small>}
                         </div>
+                        <Password
+                            id="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            feedback={false} // Optional: Hide password strength meter
+                            toggleMask // Optional: Show/Hide password toggle
+                            className={classNames({ 'p-invalid': submitted && !password })}
+                        />
+                        {submitted && !password && <small className="p-invalid">Password is required.</small>}
+
                     </Dialog>
 
                     <Dialog visible={deleteUserDialog} style={{ width: '450px' }} header="Confirm" modal footer={deleteUserDialogFooter} onHide={hideDeleteUserDialog}>

@@ -5,6 +5,7 @@ export interface User {
     email: string;
     image: string | null;
     role: string | null; // Add this property
+    password: string| null;
     created_at: string; // Add this property
     updated_at: string; // Add this property
 }

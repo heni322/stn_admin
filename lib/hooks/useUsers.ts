@@ -12,6 +12,7 @@ interface User {
     email: string;
     image: string | null;
     role: string | null;
+    password: string | null;
     created_at: string;
     updated_at: string;
 }
