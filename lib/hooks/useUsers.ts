@@ -41,7 +41,7 @@ const createUser = async (formData: FormData): Promise<User> => {
 };
 
 const updateUser = async (userId: string, formData: FormData): Promise<User> => {
-    const response = await apiClient.put(`/api/back-office/users/${userId}`, formData, {
+    const response = await apiClient.post(`/api/back-office/users/${userId}`, formData, {
         headers: {
             ...getAuthHeaders(),
             'Content-Type': 'multipart/form-data',
