@@ -30,18 +30,24 @@ const fetchUsers = async (): Promise<User[]> => {
     return response.data.data; // Extract the `data` array from the response
 };
 
-const createUser = async (user: User): Promise<User> => {
-    const response = await apiClient.post('/api/back-office/users', user, {
-        headers: getAuthHeaders(),
+const createUser = async (formData: FormData): Promise<User> => {
+    const response = await apiClient.post('/api/back-office/users', formData, {
+        headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'multipart/form-data',
+        },
     });
-    return response.data.data; // Extract the `data` array from the response
+    return response.data.data;
 };
 
-const updateUser = async (user: User): Promise<User> => {
-    const response = await apiClient.put(`/api/back-office/users/${user.id}`, user, {
-        headers: getAuthHeaders(),
+const updateUser = async (userId: string, formData: FormData): Promise<User> => {
+    const response = await apiClient.put(`/api/back-office/users/${userId}`, formData, {
+        headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'multipart/form-data',
+        },
     });
-    return response.data.data; // Extract the `data` array from the response
+    return response.data.data;
 };
 
 const deleteUser = async (id: string): Promise<string> => {
@@ -78,7 +84,7 @@ export const useUsers = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: updateUser,
+        mutationFn: ({ userId, formData }: { userId: string; formData: FormData }) => updateUser(userId, formData),
         onSuccess: (data: User) => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             useUserStore.getState().updateUser(data);
