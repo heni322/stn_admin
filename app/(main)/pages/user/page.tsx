@@ -1,4 +1,4 @@
-// Crud.tsx
+'use client';
 import { useUsers } from '@/lib/hooks/useUsers';
 import { useUserStore } from '@/lib/store/userStore';
 import { User } from '@/types/user';
