@@ -11,6 +11,7 @@ import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, { useRef } from 'react';
+import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 
 const Crud = () => {
     const toast = useRef<Toast>(null);
@@ -23,6 +24,12 @@ const Crud = () => {
     const [deleteUsersDialog, setDeleteUsersDialog] = React.useState(false);
     const [user, setUser] = React.useState<User | null>(null);
     const [submitted, setSubmitted] = React.useState(false);
+
+    const roles = [
+        { label: 'Client', value: 'Client' },
+        { label: 'Provider', value: 'Provider' },
+        { label: 'Admin', value: 'Admin' }
+    ];
 
     const openNew = () => {
         setUser(null);
@@ -75,10 +82,11 @@ const Crud = () => {
         setDeleteUsersDialog(false);
     };
 
-    const onInputChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof User) => {
-        const val = e.target.value;
+    const onInputChange = (e: React.ChangeEvent<HTMLInputElement> | DropdownChangeEvent, field: keyof User) => {
+        const val = (e as React.ChangeEvent<HTMLInputElement>).target?.value ?? (e as DropdownChangeEvent).value;
         setUser((prev) => ({ ...prev, [field]: val } as User));
     };
+
 
     const leftToolbarTemplate = () => (
         <div className="my-2">
@@ -171,6 +179,18 @@ const Crud = () => {
                             <label htmlFor="email">Email</label>
                             <InputText id="email" value={user?.email || ''} onChange={(e) => onInputChange(e, 'email')} required className={classNames({ 'p-invalid': submitted && !user?.email })} />
                             {submitted && !user?.email && <small className="p-invalid">Email is required.</small>}
+                        </div>
+                        <div className="field">
+                            <label htmlFor="role">Role</label>
+                            <Dropdown
+                                id="role"
+                                value={user?.role || ''}
+                                options={roles}
+                                onChange={(e) => onInputChange(e, 'role')}
+                                placeholder="Select a Role"
+                                className={classNames({ 'p-invalid': submitted && !user?.role })}
+                            />
+                            {submitted && !user?.role && <small className="p-invalid">Role is required.</small>}
                         </div>
                     </Dialog>
 
