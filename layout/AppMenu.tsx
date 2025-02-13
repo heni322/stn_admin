@@ -48,11 +48,11 @@ const AppMenu = () => {
         },
         {
             label: 'Gestion des Catégories',
-            items: [{ label: 'Catégories', icon: 'pi pi-fw pi-paperclip', to: '/pages/product' }]
+            items: [{ label: 'Catégories', icon: 'pi pi-fw pi-paperclip', to: '/pages/category' }]
         },
         {
             label: 'Gestion des produits',
-            items: [{ label: 'Produits', icon: 'pi pi-fw pi-truck', to: '/pages/category' }]
+            items: [{ label: 'Produits', icon: 'pi pi-fw pi-truck', to: '/pages/product' }]
         },
         {
             label: 'Pages',

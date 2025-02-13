@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import apiClient from '../apiClient';
 
-const API_URL = '/api/products'; // Replace with your API endpoint
+const API_URL = '/api/back-office/products'; // Replace with your API endpoint
 
 export interface Product {
   id: string;

@@ -10,91 +10,54 @@ import { InputNumber, InputNumberValueChangeEvent } from 'primereact/inputnumber
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { FileUpload } from 'primereact/fileupload';
-import { Dropdown } from 'primereact/dropdown';
 import { classNames } from 'primereact/utils';
-
+import { useProductStore } from '@/lib/store/productStore';
+import { Product, useCreateProduct, useDeleteProduct, useProducts, useUpdateProduct } from '@/lib/hooks/useProduct';
+import { useCategories } from '@/lib/hooks/useCategory';
+import { useSites } from '@/lib/hooks/useSite';
+import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 interface ProductVariant {
-  id?: string;
-  size: string;
-  color: string;
-  price: number;
-  stock: number;
-}
-
-interface ProductImage {
-  id?: string;
-  image_path: string;
-  is_primary: boolean;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  site_id: string;
-  category_id: string;
-  variants: ProductVariant[];
-  images: ProductImage[];
-}
-
-interface PaginationMeta {
-  totalItems: number;
-  currentPage: number;
-  totalPages: number;
-  limit: number;
-}
-
+    id: number;
+    name: string;
+    price: number;
+    stock: number;
+    size: string;
+    color: string;
+  }
 const ProductCrud = () => {
   const toast = useRef<Toast>(null);
-  const [productDialog, setProductDialog] = useState(false);
-  const [deleteProductDialog, setDeleteProductDialog] = useState(false);
-  const [deleteProductsDialog, setDeleteProductsDialog] = useState(false);
-  const [product, setProduct] = useState<Product | null>(null);
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [tableFilters, setTableFilters] = useState<DataTableFilterMeta>({});
+  const [submitted, setSubmitted] = useState(false);
+  const { data: categories } = useCategories();
+  const { data: sites } = useSites();
 
-  const [filters, setFilters] = useState({
-    name: '',
-    category_id: '',
-    sort_by: 'created_at',
-    sort_order: 'desc',
-    page: 1,
-    per_page: 10
-  });
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-        const queryParams = new URLSearchParams({
-            ...filters,
-            page: filters.page.toString(), // Convert to string
-            per_page: filters.per_page.toString(), // Convert to string
-            paginate: 'true'
-          });
-
-      const response = await fetch(`/api/products?${queryParams}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setProducts(data.data);
-        setPagination(data.pagination);
-      }
-    } catch (error) {
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to fetch products',
-        life: 3000
-      });
-    } finally {
-      setLoading(false);
-    }
+  // Add new handlers for dropdown changes
+  const onCategoryChange = (e: DropdownChangeEvent) => {
+    setProduct(product ? { ...product, category_id: e.value } : null);
   };
+
+  const onSiteChange = (e: DropdownChangeEvent) => {
+    setProduct(product ? { ...product, site_id: e.value } : null);
+  };
+  // Query hooks
+  const { data: products, isLoading } = useProducts();
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
+  const deleteProduct = useDeleteProduct();
+
+  // Store
+  const {
+    productDialog,
+    deleteProductDialog,
+    deleteProductsDialog,
+    selectedProducts,
+    product,
+    setProductDialog,
+    setDeleteProductDialog,
+    setDeleteProductsDialog,
+    setSelectedProducts,
+    setProduct
+  } = useProductStore();
 
   const openNew = () => {
     setProduct({
@@ -120,78 +83,49 @@ const ProductCrud = () => {
     setSubmitted(true);
 
     if (product?.name.trim()) {
-      const formData = new FormData();
-      formData.append('name', product.name);
-      formData.append('description', product.description || '');
-      formData.append('price', product.price.toString());
-      formData.append('site_id', product.site_id);
-      formData.append('category_id', product.category_id);
-
-      // Append variants
-      product.variants.forEach((variant, index) => {
-        Object.entries(variant).forEach(([key, value]) => {
-          formData.append(`variants[${index}][${key}]`, value.toString());
-        });
-      });
-
-      // Append images
-      product.images.forEach((image) => {
-        formData.append('images[]', image as any);
-      });
-
       try {
-        const url = product.id ? `/api/products/${product.id}` : '/api/products';
-        const method = product.id ? 'PUT' : 'POST';
-
-        const response = await fetch(url, {
-          method,
-          body: formData,
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
+        if (product.id) {
+          await updateProduct.mutateAsync(product);
           toast.current?.show({
             severity: 'success',
             summary: 'Success',
-            detail: `Product ${product.id ? 'updated' : 'created'} successfully`,
+            detail: 'Product updated successfully',
             life: 3000
           });
-          fetchProducts();
         } else {
-          throw new Error(data.error || 'Operation failed');
+          await createProduct.mutateAsync(product);
+          toast.current?.show({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Product created successfully',
+            life: 3000
+          });
         }
+        hideDialog();
       } catch (error) {
         toast.current?.show({
           severity: 'error',
           summary: 'Error',
-          detail: "error",
+          detail: 'Failed to save product',
           life: 3000
         });
       }
-
-      hideDialog();
     }
   };
 
-  const deleteProduct = async () => {
+  const confirmDeleteProduct = async () => {
     try {
-      const response = await fetch(`/api/products/${product?.id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
+      if (product?.id) {
+        await deleteProduct.mutateAsync(product.id);
         toast.current?.show({
           severity: 'success',
           summary: 'Success',
           detail: 'Product deleted successfully',
           life: 3000
         });
-        fetchProducts();
       }
+      setDeleteProductDialog(false);
+      setProduct(null);
     } catch (error) {
       toast.current?.show({
         severity: 'error',
@@ -200,7 +134,6 @@ const ProductCrud = () => {
         life: 3000
       });
     }
-    setDeleteProductDialog(false);
   };
 
   const addVariant = () => {
@@ -245,36 +178,6 @@ const ProductCrud = () => {
         severity="danger"
         onClick={() => setDeleteProductsDialog(true)}
         disabled={!selectedProducts.length}
-      />
-    </div>
-  );
-
-  const rightToolbarTemplate = () => (
-    <div className="my-2">
-      <InputText
-        placeholder="Search by name..."
-        value={filters.name}
-        onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-        className="mr-2"
-      />
-      <Dropdown
-        value={filters.sort_by}
-        options={[
-          { label: 'Created Date', value: 'created_at' },
-          { label: 'Name', value: 'name' },
-          { label: 'Price', value: 'price' }
-        ]}
-        onChange={(e) => setFilters({ ...filters, sort_by: e.value })}
-        placeholder="Sort By"
-        className="mr-2"
-      />
-      <Button
-        icon={filters.sort_order === 'asc' ? 'pi pi-sort-up' : 'pi pi-sort-down'}
-        onClick={() => setFilters({
-          ...filters,
-          sort_order: filters.sort_order === 'asc' ? 'desc' : 'asc'
-        })}
-        className="mr-2"
       />
     </div>
   );
@@ -326,7 +229,7 @@ const ProductCrud = () => {
   const deleteProductDialogFooter = (
     <>
       <Button label="No" icon="pi pi-times" severity="secondary" onClick={() => setDeleteProductDialog(false)} />
-      <Button label="Yes" icon="pi pi-check" severity="danger" onClick={deleteProduct} />
+      <Button label="Yes" icon="pi pi-check" severity="danger" onClick={confirmDeleteProduct} />
     </>
   );
 
@@ -337,27 +240,25 @@ const ProductCrud = () => {
         label="Yes"
         icon="pi pi-check"
         severity="danger"
-        onClick={() => {
-          Promise.all(selectedProducts.map(p => fetch(`/api/products/${p.id}`, { method: 'DELETE' })))
-            .then(() => {
-              setDeleteProductsDialog(false);
-              setSelectedProducts([]);
-              fetchProducts();
-              toast.current?.show({
-                severity: 'success',
-                summary: 'Success',
-                detail: 'Products deleted successfully',
-                life: 3000
-              });
-            })
-            .catch(() => {
-              toast.current?.show({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'Failed to delete products',
-                life: 3000
-              });
+        onClick={async () => {
+          try {
+            await Promise.all(selectedProducts.map((p: { id: string }) => deleteProduct.mutateAsync(p.id)));
+            setDeleteProductsDialog(false);
+            setSelectedProducts([]);
+            toast.current?.show({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'Products deleted successfully',
+              life: 3000
             });
+          } catch (error) {
+            toast.current?.show({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Failed to delete products',
+              life: 3000
+            });
+          }
         }}
       />
     </>
@@ -368,38 +269,44 @@ const ProductCrud = () => {
       <div className="col-12">
         <div className="card">
           <Toast ref={toast} />
-          <Toolbar
-            className="mb-4"
-            left={leftToolbarTemplate}
-            right={rightToolbarTemplate}
-          />
+          <Toolbar className="mb-4" left={leftToolbarTemplate} />
 
-            <DataTable
-                value={products}
-                selection={selectedProducts}
-                onSelectionChange={onSelectionChange}
-                selectionMode="multiple" // Fix: Add selectionMode
-                dataKey="id"
-                paginator
-                rows={filters.per_page}
-                totalRecords={pagination?.totalItems}
-                lazy
-                first={(filters.page - 1) * filters.per_page}
-                onPage={(e) => {
-                    if (e.page !== undefined) {
-                    setFilters({ ...filters, page: e.page + 1 });
-                    }
-                }}
-                loading={loading}
-                filters={tableFilters} // Use tableFilters for DataTable
-                onFilter={(e) => setTableFilters(e.filters)} // Update tableFilters
-            >
+          <DataTable
+            value={products}
+            selection={selectedProducts}
+            onSelectionChange={onSelectionChange}
+            selectionMode="multiple"
+            dataKey="id"
+            loading={isLoading}
+            filters={tableFilters}
+            onFilter={(e) => setTableFilters(e.filters)}
+          >
             <Column selectionMode="multiple" headerStyle={{ width: '4rem' }} />
             <Column field="name" header="Name" sortable filter />
             <Column field="price" header="Price" sortable />
-            <Column field="category_id" header="Category" sortable filter />
+            <Column
+              field="category_id"
+              header="Category"
+              sortable
+              filter
+              body={(rowData) => {
+                const category = categories?.find(c => c.id === rowData.category_id.id);
+                console.log(rowData.category_id.id)
+                return category?.name || rowData.category_id.id;
+              }}
+            />
+            <Column
+              field="site_id"
+              header="Site"
+              sortable
+              filter
+              body={(rowData) => {
+                const site = sites?.find(s => s.id === rowData.site_id.id);
+                return site?.name || rowData.site_id.id;
+              }}
+            />
             <Column body={actionBodyTemplate} />
-            </DataTable>
+          </DataTable>
 
           <Dialog
             visible={productDialog}
@@ -410,7 +317,6 @@ const ProductCrud = () => {
             footer={productDialogFooter}
             onHide={hideDialog}
           >
-            {/* Basic Info */}
             <div className="formgrid grid">
               <div className="field col-6">
                 <label htmlFor="name">Name</label>
@@ -434,6 +340,35 @@ const ProductCrud = () => {
                   currency="USD"
                 />
               </div>
+              <div className="field col-6">
+                <label htmlFor="category">Category</label>
+                <Dropdown
+                  id="category"
+                  value={product?.category_id}
+                  options={categories}
+                  optionLabel="name"
+                  optionValue="id"
+                  onChange={onCategoryChange}
+                  placeholder="Select a Category"
+                  className={classNames({ 'p-invalid': submitted && !product?.category_id })}
+                />
+                {submitted && !product?.category_id && <small className="p-error">Category is required.</small>}
+              </div>
+
+              <div className="field col-6">
+                <label htmlFor="site">Site</label>
+                <Dropdown
+                  id="site"
+                  value={product?.site_id}
+                  options={sites}
+                  optionLabel="name"
+                  optionValue="id"
+                  onChange={onSiteChange}
+                  placeholder="Select a Site"
+                  className={classNames({ 'p-invalid': submitted && !product?.site_id })}
+                />
+                {submitted && !product?.site_id && <small className="p-error">Site is required.</small>}
+              </div>
             </div>
 
             <div className="field">
@@ -446,12 +381,11 @@ const ProductCrud = () => {
               />
             </div>
 
-            {/* Variants Section */}
             <div className="field">
               <label>Variants</label>
               <Button label="Add Variant" icon="pi pi-plus" onClick={addVariant} className="mb-2" />
 
-              {product?.variants.map((variant, index) => (
+              {product?.variants.map((variant:any, index:any) => (
                 <div key={index} className="formgrid grid mb-2">
                   <div className="field col-3">
                     <InputText
@@ -485,7 +419,6 @@ const ProductCrud = () => {
               ))}
             </div>
 
-            {/* Image Upload Section */}
             <div className="field">
               <label>Images</label>
               <FileUpload
@@ -501,7 +434,33 @@ const ProductCrud = () => {
             </div>
           </Dialog>
 
-          {/* Delete Dialogs remain similar */}
+          <Dialog
+            visible={deleteProductDialog}
+            style={{ width: '450px' }}
+            header="Confirm"
+            modal
+            footer={deleteProductDialogFooter}
+            onHide={() => setDeleteProductDialog(false)}
+          >
+            <div className="confirmation-content">
+              <i className="pi pi-exclamation-triangle mr-3" style={{ fontSize: '2rem' }} />
+              <span>Are you sure you want to delete this product?</span>
+            </div>
+          </Dialog>
+
+          <Dialog
+            visible={deleteProductsDialog}
+            style={{ width: '450px' }}
+            header="Confirm"
+            modal
+            footer={deleteProductsDialogFooter}
+            onHide={() => setDeleteProductsDialog(false)}
+          >
+            <div className="confirmation-content">
+              <i className="pi pi-exclamation-triangle mr-3" style={{ fontSize: '2rem' }} />
+              <span>Are you sure you want to delete the selected products?</span>
+            </div>
+          </Dialog>
         </div>
       </div>
     </div>
